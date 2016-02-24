@@ -13,10 +13,11 @@ import seaborn as sns
 
 logFilename = "weight.log"
 avgWindow = 10
-debug = False
+debug = False #set this to true to avoid saving any data (graphs are still generated)
 keys = ['date', 'time', 'timestamp', 'weightAvg', 'weight']
 
-secsInWeek  = 60 * 60 * 24 * 7
+secsInDay   = 60 * 60 * 24 *  1
+secsInWeek  = 60 * 60 * 24 *  7
 secsInMonth = 60 * 60 * 24 * 30
 
 #find average of all values in a queue
@@ -38,6 +39,7 @@ except IOError:
 currentTime = strftime("%H:%M:%S")
 currentDate = strftime("%Y-%m-%d")
 unixTime = int(time.time())
+earliestTimestamp = float("inf")
 minWeight = float("inf")
 maxWeight = -1
 
@@ -49,6 +51,8 @@ weightQueue = deque() #a FIFO queue
 
 #find the max and min weights
 for row in weightData:
+	if float(row['timestamp']) < earliestTimestamp:
+		earliestTimestamp = float(row['timestamp'])
 	thisWeight = float(row['weight'])
 	if thisWeight > maxWeight:
 		maxWeight = thisWeight
@@ -129,18 +133,24 @@ if len(weightData) > 2:
 	weightFrame.timestamp = weightFrame.timestamp.astype(float)
 	weightFrame["datetime"] = weightFrame.date + " " + weightFrame.time
 	weightFrame.datetime = pd.to_datetime(weightFrame.datetime)
+	
+	#here we convert from unix timestamp to # of days since start of data:
+	convertToDays = lambda x: (x - earliestTimestamp) / secsInDay
+	weightFrame.timestamp = weightFrame.timestamp.apply(convertToDays)
 
 	#plotting code
 	plot = weightFrame.plot(x='datetime', y='weight', figsize=(16, 10)).get_figure()
 	plot.savefig(scriptPath + "line.png")
-	plot = sns.lmplot(x='timestamp', y='weight', data=weightFrame, size=6, aspect=2, lowess=True)
+	plot = sns.lmplot(x='timestamp', y='weight', data=weightFrame, size=8, aspect=2, lowess=True)
+	plot.set_axis_labels("Day", "Weight")
 	plot.savefig(scriptPath + "scatter.png")
 
 	#plot running average
 	from scipy.interpolate import spline
 	smoothTime = np.linspace(weightFrame.timestamp.min(), weightFrame.timestamp.max(), 500)
 	weightSmooth = spline(weightFrame.timestamp, weightFrame.weightAvg, smoothTime)
-	plot = sns.lmplot(x='timestamp', y='weight', data=weightFrame, size=6, aspect=2, fit_reg=False)
+	plot = sns.lmplot(x='timestamp', y='weight', data=weightFrame, size=8, aspect=2, fit_reg=False)
+	plot.set_axis_labels("Day", "Weight")
 	plt.plot(smoothTime, weightSmooth, sns.xkcd_rgb["electric blue"], lw=1)
 	plt.savefig(scriptPath + "smooth.png")
 
