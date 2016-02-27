@@ -143,6 +143,7 @@ if len(weightData) > 2:
 	plot.savefig(scriptPath + "line.png")
 	plot = sns.lmplot(x='timestamp', y='weight', data=weightFrame, size=8, aspect=2, lowess=True)
 	plot.set_axis_labels("Day", "Weight")
+	plot.set(xlim=(0, None))
 	plot.savefig(scriptPath + "scatter.png")
 
 	#plot running average
@@ -151,6 +152,7 @@ if len(weightData) > 2:
 	weightSmooth = spline(weightFrame.timestamp, weightFrame.weightAvg, smoothTime)
 	plot = sns.lmplot(x='timestamp', y='weight', data=weightFrame, size=8, aspect=2, fit_reg=False)
 	plot.set_axis_labels("Day", "Weight")
+	plot.set(xlim=(0, None))
 	plt.plot(smoothTime, weightSmooth, sns.xkcd_rgb["electric blue"], lw=1)
 	plt.savefig(scriptPath + "smooth.png")
 
