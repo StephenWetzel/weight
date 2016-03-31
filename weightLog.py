@@ -82,6 +82,7 @@ print "Previous average: " + str(round(prevAvg, 2))
 print "Current average:  " + str(round(recentAvg, 2))
 currentWeight = raw_input("Enter current weight: ")
 currentWeight = float(currentWeight)
+print ""
 newRow = [{'date': currentDate, 'timestamp': unixTime, 'weight': currentWeight, 'time': currentTime, 'weightAvg': currentWeight}]
 weightData += newRow
 
