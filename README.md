@@ -30,6 +30,6 @@ That is 6.0 servings, for a total of 660.0 calories.
 
 # parseCalories.py
 
-This script will parse the calories from the food diary report from myfitnesspal.com.  To get the report, go to: FOOD > Food Diary > View Full Report (Printable).  Then change the date range to the full range you want.  Save that file to your computer, and run this script in the same directory.  Currently it only gets the calorie totals, and I don't care about the other stuff.  It also ignores excercise, as I don't really log that.  I may change both of those things in the future.
+This script will parse the calories from the food diary report from myfitnesspal.com.  [The report should be here](http://www.myfitnesspal.com/reports/printable_diary), or to manually get the report, go to: FOOD > Food Diary > View Full Report (Printable).  Then change the date range to the full range you want.  Save that file to your computer, and run this script in the same directory.  Currently it only gets the calorie totals, and I don't care about the other stuff.  It also ignores excercise, as I don't really log that.  I may change both of those things in the future.
 
 I started out trying to parse the HTML with BeautifulSoup, but was having trouble with malformed HTML, so I just went with regex.
