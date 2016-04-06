@@ -13,8 +13,9 @@ import seaborn as sns
 
 logFilename = "weight.log"
 avgWindow = 10
+height = 72 #height in inches for BMI calcs
 debug = False #set this to true to avoid saving any data (graphs are still generated)
-keys = ['date', 'time', 'timestamp', 'weightAvg', 'weight']
+keys = ['date', 'time', 'timestamp', 'bmi', 'weightAvg', 'weight']
 
 secsInDay   = 60 * 60 * 24 *  1
 secsInWeek  = 60 * 60 * 24 *  7
@@ -27,6 +28,10 @@ def queAvg(q):
 		s += item
 	s /= len(q)
 	return s
+
+#calc BMI from weight
+def calcBmi(weight):
+	return weight * 703 / height / height  #http://www.cdc.gov/healthyweight/assessing/bmi/adult_bmi/
 
 scriptPath = os.path.dirname(os.path.realpath(__file__)) + "/"
 try: #open log and read data, or create an empty list
@@ -65,7 +70,7 @@ if avgWindow * 2 > len(weightData):
 	if avgWindow == 0:
 		avgWindow = 1 #prevent divide by zero later
 
-#find avg of last avgWindow number of entries
+#find avg of the most recent avgWindow number of entries
 tempSum = 0
 for row in weightData[-avgWindow:]:
 	tempSum += float(row['weight'])
@@ -87,10 +92,14 @@ newRow = [{'date': currentDate, 'timestamp': unixTime, 'weight': currentWeight, 
 weightData += newRow
 
 
-#find weekly averages
+#go through weights now that we have current value, find weekly averages, find bmi, find weekly avgs
 for row in weightData:
 	thisWeight = float(row['weight'])
 	thisWeekNum = int((unixTime - float(row['timestamp'])) / secsInWeek)
+	
+	#calc BMI:
+	thisBmi = round(calcBmi(thisWeight), 1)
+	row['bmi'] = thisBmi
 	
 	#calc running average:
 	weightQueue.append(thisWeight)
@@ -115,14 +124,15 @@ for row in weightData:
 
 weekAvgs.append(sumThisWeek / pointsInThisWeek)
 
-#calc, and display weekly deltas
+#calc, and display weekly deltas, BMIs
 for ii, thisWeek in enumerate(weekAvgs):
+	weekBmi = calcBmi(thisWeek)
 	try:
 		delta = thisWeek - lastWeek 
 	except NameError:
 		delta = 0
 	lastWeek = thisWeek
-	print "Week #" + str(ii) + " Average: " + str(round(thisWeek, 2)) + ", delta: " + str(round(delta, 2))
+	print("Week #{:2d} Average: {:06.2f}, BMI: {:05.2f}, delta: {:+5.2f}".format(ii, round(thisWeek, 2), round(weekBmi, 2), round(delta, 2)))
 print ""
 
 #skip plotting if we don't have enough data points
