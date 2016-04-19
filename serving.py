@@ -1,11 +1,14 @@
 import json
 import time
+import os
 from datetime import datetime
 
 servingFileName = 'servingData.json'
 
+scriptPath = os.path.dirname(os.path.realpath(__file__)) + "/"
+
 try:
-	with open(servingFileName, 'r') as iFile:
+	with open(scriptPath + servingFileName, 'r') as iFile:
 		data = json.load(iFile)
 except (IOError, ValueError): #file does not exist, so create an empty foods obj
 	data = json.loads('{"foods": []}')
@@ -62,7 +65,7 @@ data['foods'][foodIndex]['serving']  = servingSize
 data['foods'][foodIndex]['created']  = createdTime
 data['foods'][foodIndex]['used']     = int(time.time())
 
-with open(servingFileName, 'w+') as oFile:
+with open(scriptPath + servingFileName, 'w+') as oFile:
 	json.dump(data, oFile)
 
 endWeight = 1
