@@ -13,7 +13,13 @@ try:
 except (IOError, ValueError): #file does not exist, so create an empty foods obj
 	data = json.loads('{"foods": []}')
 
-name = raw_input("Enter name: ")
+name = raw_input("Enter name (type 'list' to show stored foods): ")
+
+while name == "list":
+	for ii, food in enumerate(data['foods']):
+		print "Name: " + str(food['name']) + " (" + str(food['calories']) + " cal)"
+
+	name = raw_input("Enter name (type 'list' to show stored foods): ")
 
 #check to see if that food has been entered in the past
 for ii, food in enumerate(data['foods']):
@@ -66,7 +72,7 @@ data['foods'][foodIndex]['created']  = createdTime
 data['foods'][foodIndex]['used']     = int(time.time())
 
 with open(scriptPath + servingFileName, 'w+') as oFile:
-	json.dump(data, oFile)
+	json.dump(data, oFile, indent=2)
 
 endWeight = 1
 while endWeight != 0:
