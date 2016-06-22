@@ -11,6 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+weightAdjustment = 0.8 #this value will be added to every weight entered by user from here on out
+#a negative value here will subtract weight from what the user enters, and a positive value will add it.
 logFilename = "weight.log"
 avgWindow = 10
 height = 72 #height in inches for BMI calcs
@@ -87,6 +89,7 @@ print "Previous average: " + str(round(prevAvg, 2))
 print "Current average:  " + str(round(recentAvg, 2))
 currentWeight = raw_input("Enter current weight: ")
 currentWeight = float(currentWeight)
+currentWeight = round(currentWeight + weightAdjustment, 1) #adjust user entered weight based on above offset
 print ""
 newRow = [{'date': currentDate, 'timestamp': unixTime, 'weight': currentWeight, 'time': currentTime, 'weightAvg': currentWeight}]
 weightData += newRow
