@@ -16,7 +16,7 @@ weightAdjustment = 0.8 #this value will be added to every weight entered by user
 logFilename = "weight.log"
 avgWindow = 10
 height = 72 #height in inches for BMI calcs
-debug = False #set this to true to avoid saving any data (graphs are still generated)
+debug = False #set this to True to avoid saving any data (graphs are still generated)
 keys = ['date', 'time', 'timestamp', 'bmi', 'weightAvg', 'weight']
 
 secsInDay   = 60 * 60 * 24 *  1
@@ -51,9 +51,13 @@ minWeight = float("inf")
 maxWeight = -1
 
 pointsInThisWeek = 0
+pointsInThisMonth = 0
 curWeekNum = 0
+curMonthNum = 0
 sumThisWeek = 0
+sumThisMonth = 0
 weekAvgs = []
+monthAvgs = []
 weightQueue = deque() #a FIFO queue
 
 #find the max and min weights
@@ -99,6 +103,7 @@ weightData += newRow
 for row in weightData:
 	thisWeight = float(row['weight'])
 	thisWeekNum = int((unixTime - float(row['timestamp'])) / secsInWeek)
+	thisMonthNum = int((unixTime - float(row['timestamp'])) / secsInMonth)
 	
 	#calc BMI:
 	thisBmi = round(calcBmi(thisWeight), 1)
@@ -125,7 +130,22 @@ for row in weightData:
 		sumThisWeek = thisWeight
 		pointsInThisWeek = 1
 
+	#calc monthly averages:
+	if thisMonthNum == curMonthNum:
+		pointsInThisMonth += 1
+		sumThisMonth += thisWeight
+	else: #a new month
+		try:
+			monthAvgs.append(sumThisMonth / pointsInThisMonth)
+		except ZeroDivisionError:
+			pass
+		#the first point in this new month is this point
+		curMonthNum = thisMonthNum
+		sumThisMonth = thisWeight
+		pointsInThisMonth = 1
+
 weekAvgs.append(sumThisWeek / pointsInThisWeek)
+monthAvgs.append(sumThisMonth / pointsInThisMonth)
 
 #calc, and display weekly deltas, BMIs
 for ii, thisWeek in enumerate(weekAvgs):
@@ -136,6 +156,17 @@ for ii, thisWeek in enumerate(weekAvgs):
 		delta = 0
 	lastWeek = thisWeek
 	print("Week #{:2d} Average: {:06.2f}, BMI: {:05.2f}, delta: {:+5.2f}".format(ii, round(thisWeek, 2), round(weekBmi, 2), round(delta, 2)))
+print ""
+
+#calc, and display monthly deltas, BMIs
+for ii, thisMonth in enumerate(monthAvgs):
+	monthBmi = calcBmi(thisMonth)
+	try:
+		delta = thisMonth - lastMonth 
+	except NameError:
+		delta = 0
+	lastMonth = thisMonth
+	print("Month #{:2d} Average: {:06.2f}, BMI: {:05.2f}, delta: {:+5.2f}".format(ii, round(thisMonth, 2), round(monthBmi, 2), round(delta, 2)))
 print ""
 
 #skip plotting if we don't have enough data points
