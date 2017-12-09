@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-weightAdjustment = 0.8 #this value will be added to every weight entered by user from here on out
+weightAdjustment = 0.0 #this value will be added to every weight entered by user from here on out
 #a negative value here will subtract weight from what the user enters, and a positive value will add it.
 logFilename = "weight.log"
 avgWindow = 10
