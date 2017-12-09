@@ -1,6 +1,7 @@
 *.png
 *.log
-*.html
+cal.html
 *.backup
 *.json
 *.tsv
+lib/*
