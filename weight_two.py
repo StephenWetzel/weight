@@ -16,7 +16,7 @@ def calculate_bmi(weight):
 
 def read_log_file():
   try: # open log and read data, or create an empty list
-    with open(script_path + log_filename, 'rb') as in_file:
+    with open(script_path + log_filename, 'r') as in_file:
       reader = csv.DictReader(in_file, delimiter='\t', quotechar='"')
       weight_rows = list(reader) # get the data into a list
   except IOError:
@@ -25,7 +25,7 @@ def read_log_file():
 
 def save_records(weight_rows):
   if debug:
-    print "WARNING: Debug mode, data not saved!"
+    print("\n *** WARNING: Debug mode, data not saved! ***\n\n")
   else: # write data to log
     with open(script_path + log_filename, 'w') as out_file:
       csv_writer = csv.DictWriter(out_file, weight_rows[0].keys(), delimiter='\t')
@@ -34,8 +34,8 @@ def save_records(weight_rows):
     out_file.close()
 
 def get_current_weight():
-  current_weight = float(raw_input("Enter current weight: "))
-  print ""
+  current_weight = float(input("Enter current weight: "))
+  print('')
   new_row = {
     'date_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
     'weight': current_weight,
@@ -106,6 +106,7 @@ def bucket_days(weight_rows):
       week_buckets.append({
         'week': current_week,
         'mean': mean(week_weights),
+        'delta': mean(week_weights) - week_buckets[-1]['mean'] if len(week_buckets) > 0 else 0,
         'mean_bmi': calculate_bmi(mean(week_weights)),
         'min': min(week_weights),
         'min_bmi': calculate_bmi(min(week_weights)),
@@ -120,6 +121,7 @@ def bucket_days(weight_rows):
         month_buckets.append({
           'month': current_month,
           'mean': mean(month_weights),
+          'delta': mean(month_weights) - month_buckets[-1]['mean'] if len(month_buckets) > 0 else 0,
           'mean_bmi': calculate_bmi(mean(month_weights)),
           'min': min(month_weights),
           'min_bmi': calculate_bmi(min(month_weights)),
@@ -131,6 +133,7 @@ def bucket_days(weight_rows):
   week_buckets.append({
     'week': current_week,
     'mean': mean(week_weights),
+    'delta': mean(week_weights) - week_buckets[-1]['mean'],
     'mean_bmi': calculate_bmi(mean(week_weights)),
     'min': min(week_weights),
     'min_bmi': calculate_bmi(min(week_weights)),
@@ -139,6 +142,7 @@ def bucket_days(weight_rows):
   month_buckets.append({
     'month': current_month,
     'mean': mean(month_weights),
+    'delta': mean(month_weights) - month_buckets[-1]['mean'],
     'mean_bmi': calculate_bmi(mean(month_weights)),
     'min': min(month_weights),
     'min_bmi': calculate_bmi(min(month_weights)),
@@ -147,28 +151,28 @@ def bucket_days(weight_rows):
   return week_buckets, month_buckets
 
 def display_records(records):
-  print ""
+  print('')
   if records['most_recent_lower'] is None:
-    print "Highest weight ever!"
+    print("Highest weight ever!")
   else:
     age = get_age_of_date(records['most_recent_lower']['date'])
-    if age > 10: print "Highest weight in {0} ({1})".format(pretty_age(age), records['most_recent_lower']['date'])
+    if age > 10: print("Highest weight in {0} ({1})".format(pretty_age(age), records['most_recent_lower']['date']))
 
   if records['most_recent_higher'] is None:
-    print "Lowest weight ever!"
+    print("Lowest weight ever!")
   else:
     age = get_age_of_date(records['most_recent_higher']['date'])
-    if age > 10: print "Lowest weight in {0} ({1})".format(pretty_age(age), records['most_recent_higher']['date'])
+    if age > 10: print("Lowest weight in {0} ({1})".format(pretty_age(age), records['most_recent_higher']['date']))
 
 def display_weeks(week_buckets):
-  print "{0}\t\t{1}\t{2}\t{3}\t{4}\t{5}".format('Week', 'Mean', 'Mean BMI', 'Min', 'Min BMI', 'Count')
-  for week in week_buckets[-10:]:
-    print "{0}\t{1}\t{2}\t\t{3}\t{4}\t{5}".format(week['week'], week['mean'], week['mean_bmi'], week['min'], week['min_bmi'], week['count'])
+  print('{:>8}{:>9}{:>8}{:>10}{:>9}{:>9}{:>7}'.format('Week', 'Mean', 'Delta', 'Mean BMI', 'Min', 'Min BMI', 'Count'))
+  for ii, week in enumerate(week_buckets[-10:]):
+    print('{:%b %d}  {:9.2f}{:+8.2f}{:10.2f}{:9.1f}{:9.2f}{:7d}'.format(week['week'], week['mean'], week['delta'], week['mean_bmi'], week['min'], week['min_bmi'], week['count']))
 
 def display_months(month_buckets):
-  print "{0}\t\t{1}\t{2}\t{3}\t{4}\t{5}".format('Month', 'Mean', 'Mean BMI', 'Min', 'Min BMI', 'Count')
-  for month in month_buckets:
-    print "{0}\t{1}\t{2}\t\t{3}\t{4}\t{5}".format(month['month'], month['mean'], month['mean_bmi'], month['min'], month['min_bmi'], month['count'])
+  print("{:>8}{:>9}{:>8}{:>10}{:>9}{:>9}{:>7}".format('Month', 'Mean', 'Delta', 'Mean BMI', 'Min', 'Min BMI', 'Count'))
+  for ii, month in enumerate(month_buckets):
+    print("{:%Y %b}{:9.2f}{:+8.2f}{:10.2f}{:9.1f}{:9.2f}{:7d}".format(month['month'], month['mean'], month['delta'], month['mean_bmi'], month['min'], month['min_bmi'], month['count']))
 
 
 weight_rows = read_log_file()
