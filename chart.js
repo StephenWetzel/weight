@@ -22,7 +22,7 @@ var chart = c3.generate({
     x: {
       type: 'timeseries',
       tick: {
-        format: '%b %-m %Y',
+        format: '%Y %b %d',
         count: 25,
       }
     },
