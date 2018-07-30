@@ -2,12 +2,14 @@ import csv
 import fileinput
 import re
 from datetime import datetime, timedelta
+import time
 import os
 
 log_filename = 'weight_two.tsv'
 height = 72 # height in inches
 debug = False # Don't write data to file
 MOVING_AVG_COUNT = 10
+MAX_DELTA = 5 # Maximum weight change allowed before we ask to confirm
 script_path = os.path.dirname(os.path.realpath(__file__)) + "/"
 
 # calc BMI from weight
@@ -33,8 +35,12 @@ def save_records(weight_rows):
       csv_writer.writerows(weight_rows)
     out_file.close()
 
-def get_current_weight():
+def get_current_weight(weight_rows):
   current_weight = float(input("Enter current weight: "))
+  if len(weight_rows) > 1 and abs(float(weight_rows[-1]['weight']) - float(current_weight)) > MAX_DELTA:
+    print("Are you sure?")
+    time.sleep(0.5)
+    current_weight = float(input("Re-enter current weight: "))
   print('')
   new_row = {
     'date_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -133,7 +139,7 @@ def bucket_days(weight_rows):
   week_buckets.append({
     'week': current_week,
     'mean': mean(week_weights),
-    'delta': mean(week_weights) - week_buckets[-1]['mean'],
+    'delta': mean(week_weights) - week_buckets[-1]['mean'] if len(week_buckets) > 0 else 0,
     'mean_bmi': calculate_bmi(mean(week_weights)),
     'min': min(week_weights),
     'min_bmi': calculate_bmi(min(week_weights)),
@@ -142,7 +148,7 @@ def bucket_days(weight_rows):
   month_buckets.append({
     'month': current_month,
     'mean': mean(month_weights),
-    'delta': mean(month_weights) - month_buckets[-1]['mean'],
+    'delta': mean(month_weights) - month_buckets[-1]['mean'] if len(month_buckets) > 0 else 0,
     'mean_bmi': calculate_bmi(mean(month_weights)),
     'min': min(month_weights),
     'min_bmi': calculate_bmi(min(month_weights)),
@@ -176,10 +182,9 @@ def display_months(month_buckets):
 
 
 weight_rows = read_log_file()
-weight_rows.append(get_current_weight())
+weight_rows.append(get_current_weight(weight_rows))
 records = find_records(weight_rows)
 week_buckets, month_buckets = bucket_days(weight_rows)
-
 display_months(month_buckets)
 display_weeks(week_buckets)
 display_records(records)
