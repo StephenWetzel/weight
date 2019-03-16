@@ -4,8 +4,10 @@ import re
 from datetime import datetime, timedelta
 import time
 import os
+import math
 
 log_filename = 'weight_two.tsv'
+daily_log_filename = 'weight_two_daily.tsv'
 height = 72 # height in inches
 debug = False # Don't write data to file
 MOVING_AVG_COUNT = 10
@@ -25,7 +27,7 @@ def read_log_file():
     weight_rows = []
   return weight_rows
 
-def save_records(weight_rows):
+def save_records(weight_rows, daily_weights):
   if debug:
     print("\n *** WARNING: Debug mode, data not saved! ***\n\n")
   else: # write data to log
@@ -33,6 +35,12 @@ def save_records(weight_rows):
       csv_writer = csv.DictWriter(out_file, weight_rows[0].keys(), delimiter='\t')
       csv_writer.writeheader()
       csv_writer.writerows(weight_rows)
+    out_file.close()
+    with open(script_path + daily_log_filename, 'w') as out_file:
+      csv_writer = csv.writer(out_file, delimiter='\t')
+      csv_writer.writerow(['date', 'weight'])
+      for key, value in daily_weights.items():
+        csv_writer.writerow([key, value])
     out_file.close()
 
 def get_current_weight(weight_rows):
@@ -99,6 +107,7 @@ def bucket_days(weight_rows):
   month_buckets = []
   month_weights = []
   current_month = get_first_of_week(datetime.strptime(weight_rows[0]['date_time'], '%Y-%m-%d %H:%M:%S'))
+  daily_weights = {}
 
   for weight_row in weight_rows:
     moving_avg_weights.append(float(weight_row['weight']))
@@ -136,6 +145,8 @@ def bucket_days(weight_rows):
       month_weights = []
       current_month = first_of_month
     month_weights.append(float(weight_row['weight']))
+
+    if float(weight_row['weight']) < daily_weights.get(row_date_time.date(), math.inf): daily_weights[row_date_time.date()] = float(weight_row['weight'])
   week_buckets.append({
     'week': current_week,
     'mean': mean(week_weights),
@@ -154,7 +165,7 @@ def bucket_days(weight_rows):
     'min_bmi': calculate_bmi(min(month_weights)),
     'count': len(month_weights)
   })
-  return week_buckets, month_buckets
+  return daily_weights, week_buckets, month_buckets
 
 def display_records(records):
   print('')
@@ -184,9 +195,9 @@ def display_months(month_buckets):
 weight_rows = read_log_file()
 weight_rows.append(get_current_weight(weight_rows))
 records = find_records(weight_rows)
-week_buckets, month_buckets = bucket_days(weight_rows)
+daily_weights, week_buckets, month_buckets = bucket_days(weight_rows)
 display_months(month_buckets)
 display_weeks(week_buckets)
 display_records(records)
 
-save_records(weight_rows)
+save_records(weight_rows, daily_weights)
