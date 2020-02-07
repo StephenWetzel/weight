@@ -5,12 +5,13 @@ from datetime import datetime, timedelta
 import time
 import os
 import math
+import statistics
 
 log_filename = 'weight_two.tsv'
 daily_log_filename = 'weight_two_daily.tsv'
 height = 72 # height in inches
 debug = False # Don't write data to file
-MOVING_AVG_COUNT = 10
+MOVING_AVG_COUNT = 14
 MAX_DELTA = 5 # Maximum weight change allowed before we ask to confirm
 script_path = os.path.dirname(os.path.realpath(__file__)) + "/"
 
@@ -45,6 +46,8 @@ def save_records(weight_rows, daily_weights):
 
 def get_current_weight(weight_rows):
   current_weight = float(input("Enter current weight: "))
+  if current_weight == 0:
+    return False
   if len(weight_rows) > 1 and abs(float(weight_rows[-1]['weight']) - float(current_weight)) > MAX_DELTA:
     print("Are you sure?")
     time.sleep(0.5)
@@ -93,6 +96,9 @@ def get_first_of_month(dt):
 def mean(l):
   return round(sum(l) / len(l), 2)
 
+def median(l):
+  return round(statistics.median(l), 2)
+
 def min(l):
   if len(l) > 3:
     return sorted(l)[1]
@@ -111,8 +117,9 @@ def bucket_days(weight_rows):
 
   for weight_row in weight_rows:
     moving_avg_weights.append(float(weight_row['weight']))
-    weight_row['avg_weight'] = mean(moving_avg_weights)
     if len(moving_avg_weights) > MOVING_AVG_COUNT: moving_avg_weights.pop(0)
+    weight_row['mean_weight'] = mean(moving_avg_weights)
+    weight_row['median_weight'] = median(moving_avg_weights)
     row_date_time = datetime.strptime(weight_row['date_time'], '%Y-%m-%d %H:%M:%S')
     first_of_week = get_first_of_week(row_date_time)
     first_of_month = get_first_of_month(row_date_time)
@@ -183,7 +190,7 @@ def display_records(records):
 
 def display_weeks(week_buckets):
   print('{:>8}{:>9}{:>8}{:>10}{:>9}{:>9}{:>7}'.format('Week', 'Mean', 'Delta', 'Mean BMI', 'Min', 'Min BMI', 'Count'))
-  for ii, week in enumerate(week_buckets[-10:]):
+  for ii, week in enumerate(week_buckets[-14:]):
     print('{:%b %d}  {:9.2f}{:+8.2f}{:10.2f}{:9.1f}{:9.2f}{:7d}'.format(week['week'], week['mean'], week['delta'], week['mean_bmi'], week['min'], week['min_bmi'], week['count']))
 
 def display_months(month_buckets):
@@ -192,12 +199,19 @@ def display_months(month_buckets):
     print("{:%Y %b}{:9.2f}{:+8.2f}{:10.2f}{:9.1f}{:9.2f}{:7d}".format(month['month'], month['mean'], month['delta'], month['mean_bmi'], month['min'], month['min_bmi'], month['count']))
 
 
+def display_current_stats(month_buckets):
+  most_recent_row = weight_rows[-1]
+  print("Current weight: {}, BMI: {:5.3f} @ {}".format(most_recent_row['weight'], calculate_bmi(float(most_recent_row['weight'])), most_recent_row['date_time']))
+
 weight_rows = read_log_file()
-weight_rows.append(get_current_weight(weight_rows))
+current_weight = get_current_weight(weight_rows)
+if current_weight:
+  weight_rows.append(current_weight)
 records = find_records(weight_rows)
 daily_weights, week_buckets, month_buckets = bucket_days(weight_rows)
 display_months(month_buckets)
 display_weeks(week_buckets)
+display_current_stats(month_buckets)
 display_records(records)
 
 save_records(weight_rows, daily_weights)
