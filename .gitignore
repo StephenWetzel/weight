@@ -4,4 +4,5 @@ cal.html
 *.backup
 *.json
 *.tsv
+*.csv
 lib/*
