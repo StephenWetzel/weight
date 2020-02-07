@@ -1,4 +1,8 @@
+
+var date_long = d3.timeFormat('%Y %b %d %a %I:%M %p');
+var date_short = d3.timeFormat('%Y %b %d');
 var chart = c3.generate({
+  bindto: '#chart',
   size: {
   },
   data: {
@@ -22,7 +26,7 @@ var chart = c3.generate({
     x: {
       type: 'timeseries',
       tick: {
-        format: '%Y %b %d',
+        format: date_short,
         count: 25,
       }
     },
@@ -39,8 +43,16 @@ var chart = c3.generate({
       }
     }
   },
+  tooltip: {
+    format: {
+      title: function (d) {
+        return date_long(d);
+      }
+    }
+  },
   zoom: {
     enabled: true,
+    type: 'scroll',
     rescale: true
   },
   grid: {
