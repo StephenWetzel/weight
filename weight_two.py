@@ -11,6 +11,7 @@ log_filename = 'weight_two.tsv'
 daily_log_filename = 'weight_two_daily.tsv'
 height = 72 # height in inches
 debug = False # Don't write data to file
+weeks = [{'num_weeks': 52, 'closest_age': math.inf}, {'num_weeks': 4, 'closest_age': math.inf}, {'num_weeks': 1, 'closest_age': math.inf}]
 MOVING_AVG_COUNT = 14
 MAX_DELTA = 5 # Maximum weight change allowed before we ask to confirm
 script_path = os.path.dirname(os.path.realpath(__file__)) + "/"
@@ -72,11 +73,23 @@ def find_records(weight_rows):
     if most_recent_higher is not None and most_recent_lower is not None: break
   return {'most_recent_lower': most_recent_lower, 'most_recent_higher': most_recent_higher}
 
-def get_age_of_date(date_str):
+def find_x_weeks_ago(weight_rows, weeks):
+  current_weight_row = weight_rows[-1]
+  for weight_row in reversed(weight_rows[:-1]):
+    weight_row_age = get_age_of_date(weight_row['date_time'], datetime.strptime(current_weight_row['date_time'], '%Y-%m-%d %H:%M:%S'))
+    for week in weeks:
+      week_offset = abs(weight_row_age - (7.0 * week['num_weeks']))
+      print(week_offset)
+      if week_offset < week['closest_age']:
+        week['closest_age'] = week_offset
+        week['weight_row'] = weight_row
+    if weight_row_age > 400: break
+  return weeks
+
+def get_age_of_date(date_str, current_date_time = datetime.now()):
   old_date_time = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
-  current_date_time = datetime.now()
   age = current_date_time - old_date_time
-  return age.days
+  return age / timedelta(days=1)
 
 def pretty_age(days):
   if days > 365:
@@ -198,20 +211,25 @@ def display_months(month_buckets):
   for ii, month in enumerate(month_buckets):
     print("{:%Y %b}{:9.2f}{:+8.2f}{:10.2f}{:9.1f}{:9.2f}{:7d}".format(month['month'], month['mean'], month['delta'], month['mean_bmi'], month['min'], month['min_bmi'], month['count']))
 
+def display_current_stats(weight_row, label='Current weight'):
+  print("{:>14}: {:4.1f}, BMI: {:5.3f} @ {}".format(label, float(weight_row['weight']), calculate_bmi(float(weight_row['weight'])), weight_row['date_time']))
 
-def display_current_stats(month_buckets):
-  most_recent_row = weight_rows[-1]
-  print("Current weight: {}, BMI: {:5.3f} @ {}".format(most_recent_row['weight'], calculate_bmi(float(most_recent_row['weight'])), most_recent_row['date_time']))
+def display_x_weeks_ago(weeks):
+  for week in weeks:
+    label = "{} {:5} ago".format(week['num_weeks'], ('week' if week['num_weeks'] == 1 else 'weeks'))
+    display_current_stats(week['weight_row'], label)
 
 weight_rows = read_log_file()
 current_weight = get_current_weight(weight_rows)
 if current_weight:
   weight_rows.append(current_weight)
 records = find_records(weight_rows)
+weeks = find_x_weeks_ago(weight_rows, weeks)
 daily_weights, week_buckets, month_buckets = bucket_days(weight_rows)
 display_months(month_buckets)
 display_weeks(week_buckets)
-display_current_stats(month_buckets)
+display_x_weeks_ago(weeks)
+display_current_stats(weight_rows[-1])
 display_records(records)
 
 save_records(weight_rows, daily_weights)
