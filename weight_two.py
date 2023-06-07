@@ -11,7 +11,7 @@ log_filename = 'weight_two.tsv'
 daily_log_filename = 'weight_two_daily.tsv'
 height = 72 # height in inches
 debug = False # Don't write data to file
-weeks = [{'num_weeks': 52, 'closest_age': math.inf}, {'num_weeks': 4, 'closest_age': math.inf}, {'num_weeks': 1, 'closest_age': math.inf}]
+weeks = [{'num_weeks': 52, 'closest_age': math.inf}, {'num_weeks': 4, 'closest_age': math.inf}, {'num_weeks': 1, 'closest_age': math.inf}, {'num_weeks': 1/7, 'closest_age': math.inf}]
 MOVING_AVG_COUNT = 14
 MAX_DELTA = 5 # Maximum weight change allowed before we ask to confirm
 script_path = os.path.dirname(os.path.realpath(__file__)) + "/"
@@ -79,7 +79,6 @@ def find_x_weeks_ago(weight_rows, weeks):
     weight_row_age = get_age_of_date(weight_row['date_time'], datetime.strptime(current_weight_row['date_time'], '%Y-%m-%d %H:%M:%S'))
     for week in weeks:
       week_offset = abs(weight_row_age - (7.0 * week['num_weeks']))
-      print(week_offset)
       if week_offset < week['closest_age']:
         week['closest_age'] = week_offset
         week['weight_row'] = weight_row
@@ -95,7 +94,7 @@ def pretty_age(days):
   if days > 365:
     return "{0} years".format(round(days / 365.0, 2))
   elif days > 30:
-    return "{0} months".format(round(days / 30.0, 2))
+    return "{0} months".format(round(days / 30.4375, 2))
   else:
     return "{0} days".format(round(days / 1.0, 2))
 
@@ -105,6 +104,9 @@ def get_first_of_week(dt):
 
 def get_first_of_month(dt):
   return dt.date() - timedelta(days=dt.date().day - 1)
+
+def weight_row_delta(first_weight_row, second_weight_row):
+  return round(float(first_weight_row['weight']) - float(second_weight_row['weight']) , 2)
 
 def mean(l):
   return round(sum(l) / len(l), 2)
@@ -203,7 +205,7 @@ def display_records(records):
 
 def display_weeks(week_buckets):
   print('{:>8}{:>9}{:>8}{:>10}{:>9}{:>9}{:>7}'.format('Week', 'Mean', 'Delta', 'Mean BMI', 'Min', 'Min BMI', 'Count'))
-  for ii, week in enumerate(week_buckets[-14:]):
+  for ii, week in enumerate(week_buckets[-20:]):
     print('{:%b %d}  {:9.2f}{:+8.2f}{:10.2f}{:9.1f}{:9.2f}{:7d}'.format(week['week'], week['mean'], week['delta'], week['mean_bmi'], week['min'], week['min_bmi'], week['count']))
 
 def display_months(month_buckets):
@@ -211,13 +213,21 @@ def display_months(month_buckets):
   for ii, month in enumerate(month_buckets):
     print("{:%Y %b}{:9.2f}{:+8.2f}{:10.2f}{:9.1f}{:9.2f}{:7d}".format(month['month'], month['mean'], month['delta'], month['mean_bmi'], month['min'], month['min_bmi'], month['count']))
 
-def display_current_stats(weight_row, label='Current weight'):
-  print("{:>14}: {:4.1f}, BMI: {:5.3f} @ {}".format(label, float(weight_row['weight']), calculate_bmi(float(weight_row['weight'])), weight_row['date_time']))
+def display_current_stats(weight_row, current_weight_row, label='Current weight'):
+  print("{:>14}: {:4.1f}, BMI: {:5.3f} @ {}, delta {:+5.1f}".format(label, float(weight_row['weight']), calculate_bmi(float(weight_row['weight'])), weight_row['date_time'], weight_row_delta(current_weight_row, weight_row)))
 
-def display_x_weeks_ago(weeks):
+def display_x_weeks_ago(weeks, current_weight_row):
   for week in weeks:
-    label = "{} {:5} ago".format(week['num_weeks'], ('week' if week['num_weeks'] == 1 else 'weeks'))
-    display_current_stats(week['weight_row'], label)
+    num_of_days = round(week['num_weeks'] * 7)
+    if num_of_days == 1:
+      label = "{} {:5} ago".format(num_of_days, 'day')
+    elif num_of_days < 7:
+      label = "{} {:5} ago".format(num_of_days, 'days')
+    elif num_of_days == 7:
+      label = "{} {:5} ago".format(week['num_weeks'], 'week')
+    else:
+      label = "{} {:5} ago".format(week['num_weeks'], 'weeks')
+    display_current_stats(week['weight_row'], current_weight_row, label)
 
 weight_rows = read_log_file()
 current_weight = get_current_weight(weight_rows)
@@ -228,8 +238,8 @@ weeks = find_x_weeks_ago(weight_rows, weeks)
 daily_weights, week_buckets, month_buckets = bucket_days(weight_rows)
 display_months(month_buckets)
 display_weeks(week_buckets)
-display_x_weeks_ago(weeks)
-display_current_stats(weight_rows[-1])
+display_x_weeks_ago(weeks, weight_rows[-1])
+display_current_stats(weight_rows[-1], weight_rows[-1])
 display_records(records)
 
 save_records(weight_rows, daily_weights)
